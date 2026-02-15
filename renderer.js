@@ -141,6 +141,414 @@ class GameRenderer {
         ctx.stroke();
     }
 
+    drawWakeupScene(progress) {
+        const ctx = this.ctx;
+        
+        // Dark bedroom background
+        const gradient = ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2, 0,
+            this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+        );
+        gradient.addColorStop(0, '#0a0a15');
+        gradient.addColorStop(1, '#050510');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw room elements with slight blur effect based on progress
+        ctx.save();
+        ctx.globalAlpha = 0.3 + progress * 0.7;
+        
+        // Window with light coming in
+        ctx.fillStyle = 'rgba(100, 100, 150, 0.2)';
+        ctx.fillRect(this.canvas.width - 200, 100, 150, 200);
+        
+        // Window frame
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(this.canvas.width - 200, 100, 150, 200);
+        ctx.beginPath();
+        ctx.moveTo(this.canvas.width - 125, 100);
+        ctx.lineTo(this.canvas.width - 125, 300);
+        ctx.stroke();
+        
+        // Cabinet next to window
+        ctx.fillStyle = '#1a1a2a';
+        ctx.fillRect(50, this.canvas.height - 250, 120, 180);
+        ctx.fillStyle = '#0f0f1a';
+        ctx.fillRect(60, this.canvas.height - 240, 100, 40);
+        ctx.fillRect(60, this.canvas.height - 190, 100, 40);
+        ctx.fillRect(60, this.canvas.height - 140, 100, 40);
+        
+        // Lamp on cabinet
+        ctx.fillStyle = '#333';
+        ctx.fillRect(100, this.canvas.height - 270, 20, 30);
+        ctx.fillStyle = 'rgba(255, 255, 200, 0.3)';
+        ctx.beginPath();
+        ctx.arc(110, this.canvas.height - 275, 15, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+        
+        // Draw instruction text
+        if (progress < 3) {
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = '#888';
+            ctx.font = '16px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('Кликните, чтобы проснуться...', this.canvas.width / 2, 100);
+            ctx.restore();
+        }
+    }
+
+    drawPlayerInBed(player) {
+        const ctx = this.ctx;
+        
+        // Bed
+        ctx.fillStyle = '#1a1a2a';
+        ctx.fillRect(this.canvas.width / 2 - 150, this.canvas.height - 200, 300, 150);
+        
+        // Mattress
+        ctx.fillStyle = '#2a2a3a';
+        ctx.fillRect(this.canvas.width / 2 - 140, this.canvas.height - 190, 280, 100);
+        
+        // Pillow
+        ctx.fillStyle = '#3a3a4a';
+        ctx.fillRect(this.canvas.width / 2 - 60, this.canvas.height - 180, 120, 40);
+        
+        // Blanket
+        ctx.fillStyle = '#252535';
+        ctx.fillRect(this.canvas.width / 2 - 130, this.canvas.height - 130, 260, 70);
+        
+        // Player lying in bed (represented as a smaller shape)
+        ctx.save();
+        ctx.translate(this.canvas.width / 2, this.canvas.height - 110);
+        ctx.rotate(Math.PI / 2);
+        
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = player.color;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        
+        const lyingSize = player.size * 0.6;
+        this.drawShape(ctx, player.shape, lyingSize);
+        
+        ctx.restore();
+    }
+
+    drawBedroom(radioPlayed) {
+        const ctx = this.ctx;
+        
+        // Bedroom background
+        const gradient = ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2, 0,
+            this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+        );
+        gradient.addColorStop(0, '#0f0f1a');
+        gradient.addColorStop(1, '#0a0a0f');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Floor
+        ctx.fillStyle = '#0d0d15';
+        ctx.fillRect(0, this.canvas.height - 150, this.canvas.width, 150);
+        
+        // Floor planks
+        ctx.strokeStyle = '#151520';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < this.canvas.width; i += 80) {
+            ctx.beginPath();
+            ctx.moveTo(i, this.canvas.height - 150);
+            ctx.lineTo(i + 20, this.canvas.height);
+            ctx.stroke();
+        }
+        
+        // Walls
+        ctx.fillStyle = '#12121a';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height - 150);
+        
+        // Bed (already slept in)
+        ctx.fillStyle = '#1a1a2a';
+        ctx.fillRect(this.canvas.width / 2 - 150, this.canvas.height - 200, 300, 50);
+        ctx.fillStyle = '#2a2a3a';
+        ctx.fillRect(this.canvas.width / 2 - 140, this.canvas.height - 195, 280, 35);
+        
+        // Messy bedding
+        ctx.fillStyle = '#252535';
+        ctx.fillRect(this.canvas.width / 2 - 130, this.canvas.height - 185, 260, 20);
+        ctx.fillStyle = '#2a2a40';
+        ctx.fillRect(this.canvas.width / 2 - 100, this.canvas.height - 175, 200, 10);
+        
+        // Radio
+        const radioX = this.canvas.width - 150;
+        const radioY = this.canvas.height - 200;
+        
+        // Radio body
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(radioX - 40, radioY - 30, 80, 60);
+        ctx.strokeStyle = '#3a3a3a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(radioX - 40, radioY - 30, 80, 60);
+        
+        // Radio speaker grille
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(radioX - 30, radioY - 20, 60, 30);
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 3; j++) {
+                ctx.fillStyle = '#0a0a0a';
+                ctx.beginPath();
+                ctx.arc(radioX - 20 + i * 12, radioY - 10 + j * 10, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Radio antenna
+        ctx.strokeStyle = '#4a4a4a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(radioX - 35, radioY - 30);
+        ctx.lineTo(radioX - 50, radioY - 60);
+        ctx.stroke();
+        
+        // Radio indicator light (blinks when played)
+        ctx.fillStyle = radioPlayed ? '#44ff44' : '#ff4444';
+        ctx.shadowColor = radioPlayed ? '#44ff44' : '#ff4444';
+        ctx.shadowBlur = radioPlayed ? 10 : 5;
+        ctx.beginPath();
+        ctx.arc(radioX + 25, radioY - 20, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Radio label if not played
+        if (!radioPlayed) {
+            ctx.fillStyle = '#666';
+            ctx.font = '10px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('РАДИО', radioX, radioY + 35);
+        }
+        
+        // Window
+        ctx.fillStyle = 'rgba(80, 80, 120, 0.15)';
+        ctx.fillRect(this.canvas.width - 200, 80, 150, 250);
+        
+        // Window frame
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(this.canvas.width - 200, 80, 150, 250);
+        ctx.beginPath();
+        ctx.moveTo(this.canvas.width - 125, 80);
+        ctx.lineTo(this.canvas.width - 125, 330);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(this.canvas.width - 200, 205);
+        ctx.lineTo(this.canvas.width - 50, 205);
+        ctx.stroke();
+        
+        // Door (exit to street)
+        const doorX = this.canvas.width / 2;
+        const doorY = this.canvas.height - 80;
+        
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(doorX - 50, doorY - 100, 100, 100);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(doorX - 50, doorY - 100, 100, 100);
+        
+        // Door handle
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(doorX + 35, doorY - 50, 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Door label
+        ctx.fillStyle = '#666';
+        ctx.font = '12px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('ВЫХОД', doorX, doorY + 15);
+        
+        // Cabinet
+        ctx.fillStyle = '#151520';
+        ctx.fillRect(50, this.canvas.height - 200, 100, 150);
+        ctx.fillStyle = '#0f0f18';
+        ctx.fillRect(60, this.canvas.height - 190, 80, 50);
+        ctx.fillRect(60, this.canvas.height - 130, 80, 50);
+        ctx.fillRect(60, this.canvas.height - 70, 80, 50);
+        
+        // Mirror on wall
+        ctx.fillStyle = '#0a0a12';
+        ctx.fillRect(100, 100, 80, 120);
+        ctx.strokeStyle = '#2a2a3a';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(100, 100, 80, 120);
+        ctx.fillStyle = 'rgba(150, 150, 180, 0.1)';
+        ctx.fillRect(105, 105, 70, 110);
+    }
+
+    drawStreet(time) {
+        const ctx = this.ctx;
+        
+        // Street background - dusk/evening atmosphere
+        const gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        gradient.addColorStop(0, '#0a0a18');
+        gradient.addColorStop(0.4, '#151525');
+        gradient.addColorStop(1, '#0f0f1a');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw buildings on both sides
+        this.drawBuildings();
+        
+        // Street/road
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, this.canvas.height - 100, this.canvas.width, 100);
+        
+        // Road markings
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([30, 20]);
+        ctx.beginPath();
+        ctx.moveTo(0, this.canvas.height - 50);
+        ctx.lineTo(this.canvas.width, this.canvas.height - 50);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Sidewalk
+        ctx.fillStyle = '#1f1f2f';
+        ctx.fillRect(0, this.canvas.height - 130, this.canvas.width, 30);
+        
+        // Street lights
+        this.drawStreetLights();
+        
+        // Distant city skyline
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        for (let i = 0; i < 15; i++) {
+            const x = (i * this.canvas.width / 10) % this.canvas.width;
+            const height = 80 + Math.sin(i * 0.5) * 40;
+            ctx.fillStyle = '#0a0a12';
+            ctx.fillRect(x, this.canvas.height - 210, 40, height);
+        }
+        ctx.restore();
+        
+        // Windows in buildings
+        this.drawBuildingWindows();
+    }
+
+    drawBuildings() {
+        const ctx = this.ctx;
+        
+        // Left side buildings
+        const leftBuildings = [
+            { x: 0, y: 100, width: 120, height: 400, color: '#12121a' },
+            { x: 100, y: 50, width: 100, height: 450, color: '#15151f' },
+            { x: 180, y: 80, width: 80, height: 420, color: '#0f0f18' }
+        ];
+        
+        // Right side buildings
+        const rightBuildings = [
+            { x: this.canvas.width - 120, y: 100, width: 120, height: 400, color: '#12121a' },
+            { x: this.canvas.width - 200, y: 60, width: 100, height: 440, color: '#161620' },
+            { x: this.canvas.width - 280, y: 90, width: 80, height: 410, color: '#0f0f18' }
+        ];
+        
+        // Draw all buildings
+        [...leftBuildings, ...rightBuildings].forEach(b => {
+            ctx.fillStyle = b.color;
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+            
+            // Building outline
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(b.x, b.y, b.width, b.height);
+        });
+    }
+
+    drawStreetLights() {
+        const ctx = this.ctx;
+        
+        // Street lamp posts
+        const lampPositions = [150, 350, 550, this.canvas.width - 150, this.canvas.width - 350, this.canvas.width - 550];
+        
+        lampPositions.forEach(x => {
+            // Lamp post
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(x - 3, this.canvas.height - 250, 6, 150);
+            
+            // Lamp head
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(x - 20, this.canvas.height - 250);
+            ctx.lineTo(x + 20, this.canvas.height - 250);
+            ctx.lineTo(x + 10, this.canvas.height - 230);
+            ctx.lineTo(x - 10, this.canvas.height - 230);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Light glow
+            const glowGradient = ctx.createRadialGradient(x, this.canvas.height - 240, 0, x, this.canvas.height - 240, 80);
+            glowGradient.addColorStop(0, 'rgba(255, 255, 200, 0.3)');
+            glowGradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = glowGradient;
+            ctx.fillRect(x - 80, this.canvas.height - 300, 160, 100);
+        });
+    }
+
+    drawBuildingWindows() {
+        const ctx = this.ctx;
+        
+        // Window configurations for buildings
+        const windows = [
+            // Left buildings
+            { x: 20, y: 120, rows: 8, cols: 3 },
+            { x: 120, y: 70, rows: 9, cols: 2 },
+            { x: 200, y: 100, rows: 8, cols: 2 },
+            // Right buildings
+            { x: this.canvas.width - 100, y: 120, rows: 8, cols: 3 },
+            { x: this.canvas.width - 190, y: 80, rows: 9, cols: 2 },
+            { x: this.canvas.width - 270, y: 110, rows: 8, cols: 2 }
+        ];
+        
+        windows.forEach(w => {
+            for (let row = 0; row < w.rows; row++) {
+                for (let col = 0; col < w.cols; col++) {
+                    const wx = w.x + col * 30;
+                    const wy = w.y + row * 40;
+                    
+                    // Random light on/off
+                    const isLit = Math.random() > 0.6;
+                    
+                    ctx.fillStyle = isLit ? 'rgba(255, 255, 200, 0.4)' : '#0a0a0f';
+                    ctx.fillRect(wx, wy, 20, 25);
+                    
+                    // Window frame
+                    ctx.strokeStyle = '#222';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(wx, wy, 20, 25);
+                }
+            }
+        });
+    }
+
+    drawCharacterName(character) {
+        const ctx = this.ctx;
+        
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = '11px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText(character.name, character.x, character.y + character.size + 15);
+        
+        // Draw voice line if present
+        if (character.voiceLine) {
+            ctx.globalAlpha = Math.min(1, character.voiceTimer);
+            ctx.fillStyle = '#fff';
+            ctx.font = '13px Courier New';
+            ctx.fillText(character.voiceLine, character.x, character.y - character.size - 10);
+        }
+        
+        ctx.restore();
+    }
+
     drawCharacter(character, pulseIntensity) {
         if (character.isDead || character.opacity <= 0.01) return;
         
