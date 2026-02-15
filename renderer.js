@@ -8,6 +8,7 @@ class GameRenderer {
         
         this.gradientCache = {};
         this.glowIntensity = 0;
+        this.distortionLevel = 0;
     }
 
     resize() {
@@ -18,6 +19,56 @@ class GameRenderer {
     clear() {
         this.ctx.fillStyle = '#0a0a1a';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    setDistortion(level) {
+        this.distortionLevel = level;
+    }
+
+    drawDistortionEffect() {
+        if (this.distortionLevel <= 0) return;
+        
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.globalAlpha = this.distortionLevel * 0.3;
+        
+        // Draw distortion lines
+        for (let i = 0; i < 20; i++) {
+            const x = Math.random() * this.canvas.width;
+            const y = Math.random() * this.canvas.height;
+            const length = 50 + Math.random() * 100;
+            
+            ctx.strokeStyle = `hsl(${Math.random() * 60 + 240}, 70%, 50%)`;
+            ctx.lineWidth = 1 + Math.random() * 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length * (Math.random() - 0.5), y + length * (Math.random() - 0.5));
+            ctx.stroke();
+        }
+        
+        // Draw geometric distortions
+        for (let i = 0; i < 5; i++) {
+            const x = Math.random() * this.canvas.width;
+            const y = Math.random() * this.canvas.height;
+            const size = 20 + Math.random() * 40;
+            
+            ctx.strokeStyle = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            ctx.lineWidth = 1;
+            
+            ctx.beginPath();
+            for (let j = 0; j < 6; j++) {
+                const angle = (j * Math.PI / 3);
+                const px = x + Math.cos(angle) * size;
+                const py = y + Math.sin(angle) * size;
+                if (j === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+        
+        ctx.restore();
     }
 
     drawGradientBackground(time) {
@@ -411,6 +462,107 @@ class GameRenderer {
             
             ctx.putImageData(imageData, 0, 0);
         }
+        
+        ctx.restore();
+    }
+
+    drawSleepButton(heldTime, requiredTime) {
+        const ctx = this.ctx;
+        const progress = heldTime / requiredTime;
+        
+        ctx.save();
+        
+        // Button background
+        const buttonWidth = 200;
+        const buttonHeight = 60;
+        const buttonX = this.canvas.width / 2 - buttonWidth / 2;
+        const buttonY = this.canvas.height - 100;
+        
+        // Glow effect
+        const glowGradient = ctx.createRadialGradient(
+            this.canvas.width / 2, buttonY + buttonHeight / 2, 0,
+            this.canvas.width / 2, buttonY + buttonHeight / 2, 150
+        );
+        glowGradient.addColorStop(0, 'rgba(100, 100, 255, 0.3)');
+        glowGradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Button outline
+        ctx.strokeStyle = 'rgba(150, 150, 255, 0.8)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
+        
+        // Progress bar
+        if (progress > 0) {
+            ctx.fillStyle = `rgba(150, 150, 255, ${0.3 + progress * 0.7})`;
+            ctx.fillRect(buttonX + 3, buttonY + 3, (buttonWidth - 6) * progress, buttonHeight - 6);
+        }
+        
+        // Text
+        ctx.fillStyle = '#fff';
+        ctx.font = '16px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Удерживайте ПРОБЕЛ или S (${heldTime.toFixed(1)}s / ${requiredTime}s)`, this.canvas.width / 2, buttonY + buttonHeight / 2);
+        
+        ctx.restore();
+    }
+
+    drawScratchMarks(scratchMarks, playerShape) {
+        const ctx = this.ctx;
+        
+        ctx.save();
+        
+        scratchMarks.forEach(mark => {
+            ctx.globalAlpha = 0.3;
+            ctx.strokeStyle = mark.color;
+            ctx.lineWidth = 2;
+            
+            ctx.translate(mark.x, mark.y);
+            
+            // Draw scratch mark based on player shape
+            ctx.beginPath();
+            
+            switch (playerShape) {
+                case 'triangle':
+                    ctx.moveTo(0, -15);
+                    ctx.lineTo(13, 10);
+                    ctx.lineTo(-13, 10);
+                    ctx.closePath();
+                    break;
+                case 'square':
+                    ctx.rect(-12, -12, 24, 24);
+                    break;
+                case 'circle':
+                    ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                    break;
+                case 'hexagon':
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i * Math.PI / 3) - Math.PI / 2;
+                        const x = Math.cos(angle) * 12;
+                        const y = Math.sin(angle) * 12;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    break;
+                case 'star':
+                    for (let i = 0; i < 5 * 2; i++) {
+                        const angle = (i * Math.PI / 5) - Math.PI / 2;
+                        const radius = i % 2 === 0 ? 15 : 6;
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    break;
+            }
+            
+            ctx.stroke();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        });
         
         ctx.restore();
     }

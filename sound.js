@@ -190,6 +190,29 @@ class SoundGenerator {
         this.ambientGain.gain.linearRampToValueAtTime(level * 0.1, now + 0.5);
     }
 
+    playDreamSound() {
+        if (!this.initialized) return;
+        
+        const now = this.audioContext.currentTime;
+        
+        // Soft, dreamy fade out
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(220, now);
+        oscillator.frequency.exponentialRampToValueAtTime(55, now + 2);
+        
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 2);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.masterGain);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 2);
+    }
+
     playCollapseSound() {
         if (!this.initialized) return;
         

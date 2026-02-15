@@ -21,9 +21,19 @@ class Game {
         this.radioPlayed = false;
         this.criticalPoints = [120, 60, 30];
         this.criticalPointTriggered = [false, false, false];
+        this.loopCount = 0;
+        this.sleepPressed = false;
+        this.sleepHeldTime = 0;
+        this.sleepRequiredTime = 7;
+        this.scratchMarks = [];
         
         this.playerShape = null;
         this.playerColor = null;
+        
+        // Non-Euclidean corridor tracking
+        this.playerPositions = [];
+        this.corridorShifted = false;
+        this.corridorShiftCount = 0;
         
         this.setupEventListeners();
         this.setupCharacterCreation();
@@ -35,6 +45,36 @@ class Game {
         
         document.getElementById('start-btn').addEventListener('click', () => this.startGame());
         document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+        
+        // Sleep button mechanics (Space key or 'S' key)
+        document.addEventListener('keydown', (e) => {
+            if (this.state !== 'playing') return;
+            if (e.code === 'Space' || e.code === 'KeyS') {
+                this.sleepPressed = true;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'KeyS') {
+                this.sleepPressed = false;
+                this.sleepHeldTime = 0;
+            }
+        });
+        
+        // Sleep button click
+        document.getElementById('sleep-btn')?.addEventListener('mousedown', () => {
+            this.sleepPressed = true;
+        });
+        
+        document.getElementById('sleep-btn')?.addEventListener('mouseup', () => {
+            this.sleepPressed = false;
+            this.sleepHeldTime = 0;
+        });
+        
+        document.getElementById('sleep-btn')?.addEventListener('mouseleave', () => {
+            this.sleepPressed = false;
+            this.sleepHeldTime = 0;
+        });
     }
 
     setupCharacterCreation() {
@@ -97,6 +137,9 @@ class Game {
         
         // Update player position (smooth follow)
         if (this.player) {
+            const oldX = this.player.x;
+            const oldY = this.player.y;
+            
             const dx = e.clientX - this.player.x;
             const dy = e.clientY - this.player.y;
             
@@ -105,7 +148,85 @@ class Game {
             
             // Update rotation based on movement direction
             this.player.rotation = Math.atan2(dy, dx);
+            
+            // Track player positions for non-Euclidean corridor
+            this.playerPositions.push({ x: this.player.x, y: this.player.y, time: now });
+            
+            // Keep last 5 seconds of positions
+            this.playerPositions = this.playerPositions.filter(p => now - p.time < 5000);
+            
+            // Check for path repetition (non-Euclidean corridor shift)
+            if (this.playerPositions.length > 50) {
+                this.checkNonEuclideanShift();
+            }
         }
+    }
+
+    checkNonEuclideanShift() {
+        // Check if player has walked similar path before
+        if (this.playerPositions.length < 100) return;
+        
+        const recentPositions = this.playerPositions.slice(-50);
+        const olderPositions = this.playerPositions.slice(0, -50);
+        
+        // Calculate similarity between recent and older paths
+        let similarCount = 0;
+        const threshold = 30; // pixels
+        
+        recentPositions.forEach(recent => {
+            olderPositions.forEach(older => {
+                const dist = Math.hypot(recent.x - older.x, recent.y - older.y);
+                if (dist < threshold) {
+                    similarCount++;
+                }
+            });
+        });
+        
+        // If significant similarity detected, trigger corridor shift
+        if (similarCount > 20 && !this.corridorShifted) {
+            this.triggerCorridorShift();
+        }
+    }
+
+    triggerCorridorShift() {
+        this.corridorShifted = true;
+        this.corridorShiftCount++;
+        
+        // Visual effect
+        this.showMessage('*Коридор искажается...*');
+        sound.playStarSound(0.7);
+        
+        // Set renderer distortion
+        this.renderer.setDistortion(1);
+        
+        // Shift character positions randomly
+        this.characters.forEach(char => {
+            if (char.name !== 'Коричневый Параллелепипед') { // Don't move the parallelepiped
+                char.baseX += (Math.random() - 0.5) * 100;
+                char.baseY += (Math.random() - 0.5) * 50;
+                
+                // Keep within bounds
+                char.baseX = Math.max(100, Math.min(this.canvas.width - 100, char.baseX));
+                char.baseY = Math.max(250, Math.min(this.canvas.height - 150, char.baseY));
+                
+                char.x = char.baseX;
+                char.y = char.baseY;
+            }
+        });
+        
+        // Fade out distortion
+        let fadeInterval = setInterval(() => {
+            this.renderer.distortionLevel -= 0.05;
+            if (this.renderer.distortionLevel <= 0) {
+                this.renderer.distortionLevel = 0;
+                clearInterval(fadeInterval);
+            }
+        }, 100);
+        
+        // Reset after some time
+        setTimeout(() => {
+            this.corridorShifted = false;
+        }, 5000);
     }
 
     handleClick(e) {
@@ -231,6 +352,8 @@ class Game {
         this.decisionMapShown = false;
         this.selectedDecision = null;
         this.criticalPointTriggered = [false, false, false];
+        this.playerPositions = [];
+        this.corridorShifted = false;
         
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('countdown').classList.remove('hidden');
@@ -305,6 +428,30 @@ class Game {
         } else if (this.decisionMapShown && this.selectedDecision) {
             timeModifier = 1;
             this.decisionMapShown = false;
+        }
+        
+        // Handle sleep button (only active when time <= 5 seconds)
+        if (this.timeRemaining <= 5 && this.sleepPressed) {
+            this.sleepHeldTime += deltaTime;
+            
+            // Update sleep button visual
+            const sleepBtn = document.getElementById('sleep-btn');
+            if (sleepBtn) {
+                const progress = this.sleepHeldTime / this.sleepRequiredTime;
+                sleepBtn.style.setProperty('--sleep-progress', progress);
+                
+                if (progress >= 1) {
+                    // Trigger dream ending
+                    this.triggerDreamEnding();
+                    return;
+                }
+            }
+        } else {
+            this.sleepHeldTime = 0;
+            const sleepBtn = document.getElementById('sleep-btn');
+            if (sleepBtn) {
+                sleepBtn.style.setProperty('--sleep-progress', 0);
+            }
         }
         
         this.timeRemaining -= deltaTime * timeModifier;
@@ -451,6 +598,7 @@ class Game {
         this.renderer.drawGeometricCity(this.timeRemaining);
         this.renderer.drawApartment();
         this.renderer.drawFractal(this.timeRemaining);
+        this.renderer.drawDistortionEffect();
         
         // Draw connections
         this.connections.forEach((intensity, key) => {
@@ -484,6 +632,62 @@ class Game {
         if (this.timeRemaining < 60) {
             this.renderer.drawCollapseEffect(this.timeRemaining);
         }
+        
+        // Draw sleep button (only visible when time <= 5 seconds)
+        if (this.timeRemaining <= 5 && this.timeRemaining > 0) {
+            this.renderer.drawSleepButton(this.sleepHeldTime, this.sleepRequiredTime);
+        }
+        
+        // Draw scratch marks from previous loops
+        if (this.loopCount > 0) {
+            this.renderer.drawScratchMarks(this.scratchMarks, this.player.shape);
+        }
+    }
+
+    triggerDreamEnding() {
+        this.state = 'ending';
+        
+        // Save scratch mark for this loop
+        this.scratchMarks.push({
+            x: this.player.x + (Math.random() - 0.5) * 50,
+            y: this.player.y + (Math.random() - 0.5) * 50,
+            shape: this.player.shape,
+            color: this.player.color
+        });
+        
+        // Play dream sound
+        sound.playDreamSound();
+        
+        // Show dream transition
+        this.showMessage('*Вы закрываете глаза...*');
+        
+        setTimeout(() => {
+            // Reset to beginning
+            this.loopCount++;
+            this.timeRemaining = 180;
+            this.state = 'playing';
+            this.sleepPressed = false;
+            this.sleepHeldTime = 0;
+            
+            // Reposition player in apartment
+            this.player.x = this.canvas.width / 2;
+            this.player.y = this.canvas.height / 2 + 50;
+            
+            // Reset characters but don't play radio again
+            this.characters = CharacterFactory.createAll();
+            this.shadowNull = null;
+            this.connections.clear();
+            this.trust = 50;
+            this.clarity = 100;
+            this.fractalViews = 0;
+            this.criticalPointTriggered = [false, false, false];
+            
+            // Show message about loop
+            this.showMessage(this.loopCount === 1 ? '06:57... Радио молчит.' : `Цикл ${this.loopCount + 1}`);
+            
+            this.lastTime = performance.now();
+            requestAnimationFrame((t) => this.gameLoop(t));
+        }, 2000);
     }
 
     triggerEnding() {
@@ -586,6 +790,8 @@ class Game {
         this.state = 'menu';
         this.shadowNull = null;
         this.connections.clear();
+        this.loopCount = 0;
+        this.scratchMarks = [];
     }
 }
 
