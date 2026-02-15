@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПОСЛЕДНИЕ 180 СЕКУНД</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="countdown" class="countdown">03:00</div>
+        <div id="message-overlay" class="message-overlay"></div>
+        <div id="start-screen" class="start-screen">
+            <h1>ПОСЛЕДНИЕ 180 СЕКУНД</h1>
+            <p class="subtitle">Психологический выживальщик</p>
+            <div id="character-creation">
+                <h3>Выберите свою форму (психологию):</h3>
+                <div class="shape-selector" data-shape="triangle">
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                        <polygon points="30,5 55,50 5,50" fill="#666"/>
+                    </svg>
+                    <span>Треугольник</span>
+                </div>
+                <div class="shape-selector" data-shape="square">
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                        <rect x="10" y="10" width="40" height="40" fill="#666"/>
+                    </svg>
+                    <span>Квадрат</span>
+                </div>
+                <div class="shape-selector" data-shape="circle">
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                        <circle cx="30" cy="30" r="25" fill="#666"/>
+                    </svg>
+                    <span>Круг</span>
+                </div>
+                <div class="shape-selector" data-shape="hexagon">
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                        <polygon points="30,5 52,17 52,43 30,55 8,43 8,17" fill="#666"/>
+                    </svg>
+                    <span>Шестиугольник</span>
+                </div>
+                <div class="shape-selector" data-shape="star">
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                        <polygon points="30,3 37,23 58,23 41,35 47,55 30,43 13,55 19,35 2,23 23,23" fill="#666"/>
+                    </svg>
+                    <span>Звезда</span>
+                </div>
+            </div>
+            <div id="color-creation">
+                <h3>Выберите свой цвет (роль в кризисе):</h3>
+                <div class="color-selector" data-color="crimson" title="Импульсивность/Опасность"></div>
+                <div class="color-selector" data-color="deepskyblue" title="Мудрость/Хладнокровие"></div>
+                <div class="color-selector" data-color="emerald" title="Ресурсы/Природа"></div>
+                <div class="color-selector" data-color="amethyst" title="Интуиция/Тайна"></div>
+                <div class="color-selector" data-color="amber" title="Хаос/Непредсказуемость"></div>
+                <div class="color-selector" data-color="gold" title="Лидерство/Жертвенность"></div>
+            </div>
+            <button id="start-btn" class="start-btn" disabled>НАЧАТЬ</button>
+        </div>
+        <div id="ending-screen" class="ending-screen hidden">
+            <h1 id="ending-title"></h1>
+            <p id="ending-description"></p>
+            <button id="restart-btn" class="start-btn">НАЧАТЬ ЗАНОВО</button>
+        </div>
+    </div>
+    <script src="sound.js"></script>
+    <script src="characters.js"></script>
+    <script src="renderer.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

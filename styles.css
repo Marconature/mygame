@@ -1,0 +1,220 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #0a0a0f;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #fff;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 120px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.3);
+    z-index: 10;
+    pointer-events: none;
+    transition: all 0.1s ease;
+}
+
+.countdown.panic {
+    color: #ff4444;
+    text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000;
+    animation: panicPulse 0.2s infinite;
+}
+
+.countdown.slow {
+    color: #44ff44;
+    text-shadow: 0 0 30px #00ff00, 0 0 60px #00ff00;
+}
+
+@keyframes panicPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.message-overlay {
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    text-align: center;
+    max-width: 80%;
+}
+
+.message-overlay.show {
+    opacity: 1;
+}
+
+.start-screen, .ending-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #0a0a1a 50%, #0a0a0f 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.start-screen h1, .ending-screen h1 {
+    font-size: 48px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #888;
+    margin-bottom: 40px;
+}
+
+#character-creation, #color-creation {
+    margin: 20px 0;
+    text-align: center;
+}
+
+#character-creation h3, #color-creation h3 {
+    font-size: 16px;
+    color: #aaa;
+    margin-bottom: 15px;
+}
+
+.shape-selector {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.shape-selector:hover {
+    transform: scale(1.1);
+}
+
+.shape-selector span {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+}
+
+.shape-selector.selected svg {
+    filter: drop-shadow(0 0 10px gold);
+}
+
+.shape-selector.selected span {
+    color: gold;
+}
+
+.color-selector {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    margin: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 3px solid transparent;
+}
+
+.color-selector:hover {
+    transform: scale(1.15);
+}
+
+.color-selector[data-color="crimson"] { background: radial-gradient(circle, #dc143c, #8b0000); }
+.color-selector[data-color="deepskyblue"] { background: radial-gradient(circle, #00bfff, #0066cc); }
+.color-selector[data-color="emerald"] { background: radial-gradient(circle, #50c878, #228b22); }
+.color-selector[data-color="amethyst"] { background: radial-gradient(circle, #9966cc, #663399); }
+.color-selector[data-color="amber"] { background: radial-gradient(circle, #ffc800, #cc9900); }
+.color-selector[data-color="gold"] { background: radial-gradient(circle, #ffd700, #b8860b); }
+
+.color-selector.selected {
+    border-color: #fff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.start-btn {
+    margin-top: 30px;
+    padding: 15px 50px;
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #333, #111);
+    color: #fff;
+    border: 2px solid #555;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.start-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #555, #333);
+    border-color: #fff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.start-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#ending-description {
+    font-size: 16px;
+    color: #ccc;
+    max-width: 600px;
+    text-align: center;
+    line-height: 1.6;
+    margin: 20px 0;
+}
+
+/* Breathing animation for countdown */
+@keyframes breathe {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+}
+
+.countdown {
+    animation: breathe 3s ease-in-out infinite;
+}
