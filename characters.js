@@ -57,34 +57,70 @@ class Character {
     }
 
     executeBehavior(deltaTime, timeRemaining) {
+        // Street wandering behavior - NPCs move around more freely
+        const isStreetMode = (window.game && window.game.state === 'street');
+        
         switch (this.behavior) {
             case 'aggressive':
-                if (!this.moved) {
+                if (isStreetMode) {
+                    // Wander around on street
+                    this.x += Math.sin(this.pulsePhase * 0.8) * 30 * deltaTime;
+                    this.y += Math.cos(this.pulsePhase * 0.6) * 20 * deltaTime;
+                } else if (!this.moved) {
                     this.x += (Math.random() - 0.5) * 2;
                     this.y += (Math.random() - 0.5) * 2;
                 }
                 break;
             case 'calm':
-                this.x = this.baseX + Math.sin(this.pulsePhase * 0.5) * 5;
+                if (isStreetMode) {
+                    // Slow wandering
+                    this.x += Math.sin(this.pulsePhase * 0.3) * 20 * deltaTime;
+                    this.y += Math.cos(this.pulsePhase * 0.2) * 15 * deltaTime;
+                } else {
+                    this.x = this.baseX + Math.sin(this.pulsePhase * 0.5) * 5;
+                }
                 break;
             case 'fearful':
-                this.x = this.baseX + Math.sin(this.pulsePhase * 2) * 10;
-                this.y = this.baseY + Math.cos(this.pulsePhase * 2) * 5;
+                if (isStreetMode) {
+                    // Quick, jerky movements
+                    this.x += Math.sin(this.pulsePhase * 2) * 35 * deltaTime * (Math.random() > 0.5 ? 1 : -1);
+                    this.y += Math.cos(this.pulsePhase * 1.8) * 25 * deltaTime;
+                } else {
+                    this.x = this.baseX + Math.sin(this.pulsePhase * 2) * 10;
+                    this.y = this.baseY + Math.cos(this.pulsePhase * 2) * 5;
+                }
                 break;
             case 'erratic':
-                this.x = this.baseX + Math.sin(this.pulsePhase * 3) * 15 * (Math.random() > 0.5 ? 1 : -1);
-                this.y = this.baseY + Math.cos(this.pulsePhase * 2.5) * 10;
+                if (isStreetMode) {
+                    // Random wandering
+                    this.x += Math.sin(this.pulsePhase * 1.5 + Math.random()) * 40 * deltaTime;
+                    this.y += Math.cos(this.pulsePhase * 1.2) * 30 * deltaTime;
+                } else {
+                    this.x = this.baseX + Math.sin(this.pulsePhase * 3) * 15 * (Math.random() > 0.5 ? 1 : -1);
+                    this.y = this.baseY + Math.cos(this.pulsePhase * 2.5) * 10;
+                }
                 break;
             case 'invisible':
                 this.opacity = 0.2 + Math.sin(this.pulsePhase) * 0.1;
+                if (isStreetMode) {
+                    this.x += Math.sin(this.pulsePhase * 0.4) * 15 * deltaTime;
+                }
                 break;
             case 'floating':
                 this.y = this.baseY + Math.sin(this.pulsePhase) * 10 - 20;
                 break;
         }
         
-        this.x = Math.max(50, Math.min(window.innerWidth - 50, this.x));
-        this.y = Math.max(200, Math.min(window.innerHeight - 100, this.y));
+        // Keep characters within bounds (different for street vs indoors)
+        if (isStreetMode) {
+            // Street bounds - wider area
+            this.x = Math.max(180, Math.min(window.innerWidth - 180, this.x));
+            this.y = Math.max(200, Math.min(window.innerHeight - 150, this.y));
+        } else {
+            // Indoor bounds
+            this.x = Math.max(50, Math.min(window.innerWidth - 50, this.x));
+            this.y = Math.max(200, Math.min(window.innerHeight - 100, this.y));
+        }
     }
 
     say(text) {
@@ -106,6 +142,102 @@ class Character {
 }
 
 class CharacterFactory {
+    static createStreetNPCs(count) {
+        const characters = [];
+        
+        // Russian male names for NPCs
+        const maleNames = [
+            'Александр', 'Максим', 'Артём', 'Дмитрий', 'Игорь', 'Никита',
+            'Михаил', 'Даниил', 'Сергей', 'Андрей', 'Алексей', 'Павел',
+            'Владимир', 'Константин', 'Виктор', 'Роман', 'Евгений', 'Олег',
+            'Антон', 'Илья', 'Юрий', 'Валерий', 'Станислав', 'Владислав'
+        ];
+        
+        // Russian female names for NPCs
+        const femaleNames = [
+            'Анастасия', 'Мария', 'Дарья', 'Анна', 'Елизавета', 'Виктория',
+            'Полина', 'София', 'Алиса', 'Елена', 'Ольга', 'Наталья',
+            'Татьяна', 'Ирина', 'Ксения', 'Юлия', 'Екатерина', 'Вероника'
+        ];
+        
+        // Colors for NPCs
+        const npcColors = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+            '#1abc9c', '#e91e63', '#00bcd4', '#ff5722', '#607d8b',
+            '#8bc34a', '#03a9f4', '#ff9800', '#9c27b0', '#4caf50'
+        ];
+        
+        // Shapes for NPCs
+        const npcShapes = ['triangle', 'square', 'circle', 'hexagon', 'star'];
+        
+        // Behaviors for NPCs
+        const npcBehaviors = ['calm', 'fearful', 'erratic', 'aggressive'];
+        
+        // NPC dialogues
+        const npcDialogues = [
+            'Что происходит?!',
+            'Куда нам бежать...',
+            'Я слышал сигнал...',
+            'Не оставляйте меня!',
+            'Радио молчит...',
+            'Мы все погибнем...',
+            'Есть выход!',
+            'Помогите мне!',
+            'Я потерял семью...',
+            'Это конец?',
+            'Спасите нас!',
+            'Коллапс близко...',
+            'Времени мало!',
+            'Где убежище?',
+            'Страх поглощает...',
+            'Я видел свет!',
+            'Не смотрите туда!',
+            'Бежим!',
+            'Мы должны объединиться...',
+            'Свет гаснет...'
+        ];
+        
+        // Generate unique NPCs
+        const usedNames = new Set();
+        
+        for (let i = 0; i < count; i++) {
+            // Select random gender
+            const isMale = Math.random() > 0.5;
+            const nameList = isMale ? maleNames : femaleNames;
+            
+            // Get unique name
+            let name;
+            do {
+                name = nameList[Math.floor(Math.random() * nameList.length)];
+            } while (usedNames.has(name));
+            usedNames.add(name);
+            
+            // Random position on the street (avoiding buildings)
+            const x = 200 + Math.random() * (window.innerWidth - 400);
+            const y = 250 + Math.random() * (window.innerHeight - 400);
+            
+            // Random properties
+            const color = npcColors[Math.floor(Math.random() * npcColors.length)];
+            const shape = npcShapes[Math.floor(Math.random() * npcShapes.length)];
+            const behavior = npcBehaviors[Math.floor(Math.random() * npcBehaviors.length)];
+            const dialogue = npcDialogues[Math.floor(Math.random() * npcDialogues.length)];
+            
+            characters.push(new Character({
+                x: x,
+                y: y,
+                size: 25 + Math.random() * 15,
+                shape: shape,
+                color: color,
+                name: name,
+                dialogue: dialogue,
+                behavior: behavior,
+                stress: 0.3 + Math.random() * 0.5
+            }));
+        }
+        
+        return characters;
+    }
+
     static createAll() {
         const characters = [];
         const centerX = window.innerWidth / 2;

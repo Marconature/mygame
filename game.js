@@ -3,7 +3,7 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.renderer = new GameRenderer(this.canvas);
         
-        this.state = 'menu'; // menu, playing, ending
+        this.state = 'menu'; // menu, wakeup, bedroom, street, playing, ending
         this.timeRemaining = 180;
         this.lastTime = 0;
         this.player = null;
@@ -29,6 +29,14 @@ class Game {
         
         this.playerShape = null;
         this.playerColor = null;
+        
+        // Story progression
+        this.wakeupProgress = 0;
+        this.playerInBed = true;
+        this.radioPlayed = false;
+        this.bedroomExplored = false;
+        this.streetExplored = false;
+        this.npcCount = 20; // More NPCs on the street
         
         // Non-Euclidean corridor tracking
         this.playerPositions = [];
@@ -108,7 +116,7 @@ class Game {
     }
 
     handleMouseMove(e) {
-        if (this.state !== 'playing') return;
+        if (this.state === 'menu' || this.state === 'ending') return;
         
         const now = Date.now();
         const timeDelta = (now - this.lastMouseTime) / 1000;
@@ -140,25 +148,34 @@ class Game {
             const oldX = this.player.x;
             const oldY = this.player.y;
             
-            const dx = e.clientX - this.player.x;
-            const dy = e.clientY - this.player.y;
-            
-            this.player.x += dx * 0.1;
-            this.player.y += dy * 0.1;
-            
-            // Update rotation based on movement direction
-            this.player.rotation = Math.atan2(dy, dx);
-            
-            // Track player positions for non-Euclidean corridor
-            this.playerPositions.push({ x: this.player.x, y: this.player.y, time: now });
-            
-            // Keep last 5 seconds of positions
-            this.playerPositions = this.playerPositions.filter(p => now - p.time < 5000);
-            
-            // Check for path repetition (non-Euclidean corridor shift)
-            if (this.playerPositions.length > 50) {
-                this.checkNonEuclideanShift();
+            // In wakeup state, player is in bed - no movement
+            if (this.state !== 'wakeup' || !this.playerInBed) {
+                const dx = e.clientX - this.player.x;
+                const dy = e.clientY - this.player.y;
+                
+                // Slower movement in bedroom
+                const speedMultiplier = (this.state === 'bedroom') ? 0.05 : 0.1;
+                
+                this.player.x += dx * speedMultiplier;
+                this.player.y += dy * speedMultiplier;
+                
+                // Update rotation based on movement direction
+                this.player.rotation = Math.atan2(dy, dx);
+                
+                // Track player positions for non-Euclidean corridor
+                this.playerPositions.push({ x: this.player.x, y: this.player.y, time: now });
+                
+                // Keep last 5 seconds of positions
+                this.playerPositions = this.playerPositions.filter(p => now - p.time < 5000);
+                
+                // Check for path repetition (non-Euclidean corridor shift)
+                if (this.playerPositions.length > 50 && this.state === 'playing') {
+                    this.checkNonEuclideanShift();
+                }
             }
+            
+            // Check for state transitions
+            this.checkStateTransitions();
         }
     }
 
@@ -227,48 +244,137 @@ class Game {
         setTimeout(() => {
             this.corridorShifted = false;
         }, 5000);
-    }
+        }
+
+        checkStateTransitions() {
+        // Wakeup -> Bedroom transition (click to get out of bed)
+        if (this.state === 'wakeup' && this.playerInBed) {
+        // Player must click to get out of bed (handled in handleClick)
+        }
+
+        // Bedroom -> Street transition (go through door)
+        if (this.state === 'bedroom' && !this.bedroomExplored) {
+        const doorX = this.canvas.width / 2;
+        const doorY = this.canvas.height - 80;
+        if (Math.hypot(this.player.x - doorX, this.player.y - doorY) < 60) {
+            this.bedroomExplored = true;
+            this.transitionToStreet();
+        }
+        }
+
+        // Street -> Playing transition (find and approach a character)
+        if (this.state === 'street' && !this.streetExplored) {
+        // Check if player approached any character
+        for (const char of this.characters) {
+            if (Math.hypot(this.player.x - char.x, this.player.y - char.y) < 80) {
+                this.streetExplored = true;
+                this.transitionToPlaying();
+                break;
+            }
+        }
+        }
+        }
+
+        transitionToBedroom() {
+        this.state = 'bedroom';
+        this.playerInBed = false;
+        this.showMessage('Вы встали. Рядом радио...');
+
+        // Start bedroom radio sequence
+        setTimeout(() => this.playBedroomRadio(), 2000);
+        }
+
+        transitionToStreet() {
+        this.state = 'street';
+        this.showMessage('Вы вышли на улицу. Ищите выживших...');
+
+        // Spawn street NPCs
+        this.characters = CharacterFactory.createStreetNPCs(this.npcCount);
+
+        // Increase ambient tension
+        sound.updateAmbientTension(0.5);
+        }
+
+        transitionToPlaying() {
+        this.state = 'playing';
+        document.getElementById('countdown').classList.remove('hidden');
+        this.showMessage('⬠ "Внимание! Код Омега. Через 180 секунд пространственно-временной коллапс..."');
+
+        // Start the main radio sequence
+        setTimeout(() => {
+        this.showMessage('⬠ "Это не учения. Повторяю: это не учения."');
+        }, 2000);
+
+        setTimeout(() => {
+        this.showMessage('');
+        }, 5000);
+
+        // Increase ambient tension
+        sound.startAmbientTension(0.7);
+        }
 
     handleClick(e) {
-        if (this.state !== 'playing') return;
+        if (this.state === 'menu' || this.state === 'ending') return;
+        
+        // Wakeup state - click to get out of bed
+        if (this.state === 'wakeup' && this.playerInBed) {
+            this.wakeupProgress++;
+            if (this.wakeupProgress >= 3) {
+                this.transitionToBedroom();
+            }
+            return;
+        }
+        
+        // Bedroom state - click on radio
+        if (this.state === 'bedroom' && !this.radioPlayed) {
+            const radioX = this.canvas.width - 150;
+            const radioY = this.canvas.height - 200;
+            if (Math.hypot(e.clientX - radioX, e.clientY - radioY) < 50) {
+                this.playBedroomRadio();
+            }
+        }
         
         // Check if clicking on a character
-        this.characters.forEach(char => {
-            if (char.isDead) return;
-            
-            const dist = Math.hypot(e.clientX - char.x, e.clientY - char.y);
-            if (dist < char.size * 1.5) {
-                this.interactWithCharacter(char);
-            }
-        });
-        
-        // Check fractal clicks
-        const corners = [
-            { x: 50, y: 200 },
-            { x: this.canvas.width - 50, y: 200 },
-            { x: 50, y: this.canvas.height - 100 },
-            { x: this.canvas.width - 50, y: this.canvas.height - 100 }
-        ];
-        
-        corners.forEach(corner => {
-            if (Math.hypot(e.clientX - corner.x, e.clientY - corner.y) < 100) {
-                this.fractalViews++;
-                if (this.fractalViews >= 3) {
-                    this.timeRemaining = Math.max(1, this.timeRemaining);
-                }
-            }
-        });
-        
-        // Check decision map clicks
-        if (this.decisionMapShown && this.decisions) {
-            this.decisions.forEach(decision => {
-                const midX = (decision.start.x + decision.end.x) / 2;
-                const midY = (decision.start.y + decision.end.y) / 2;
+        if (this.state === 'street' || this.state === 'playing') {
+            this.characters.forEach(char => {
+                if (char.isDead) return;
                 
-                if (Math.hypot(e.clientX - midX, e.clientY - midY) < 50) {
-                    this.selectedDecision = decision;
+                const dist = Math.hypot(e.clientX - char.x, e.clientY - char.y);
+                if (dist < char.size * 1.5) {
+                    this.interactWithCharacter(char);
                 }
             });
+        }
+        
+        // Check fractal clicks
+        if (this.state === 'playing') {
+            const corners = [
+                { x: 50, y: 200 },
+                { x: this.canvas.width - 50, y: 200 },
+                { x: 50, y: this.canvas.height - 100 },
+                { x: this.canvas.width - 50, y: this.canvas.height - 100 }
+            ];
+            
+            corners.forEach(corner => {
+                if (Math.hypot(e.clientX - corner.x, e.clientY - corner.y) < 100) {
+                    this.fractalViews++;
+                    if (this.fractalViews >= 3) {
+                        this.timeRemaining = Math.max(1, this.timeRemaining);
+                    }
+                }
+            });
+            
+            // Check decision map clicks
+            if (this.decisionMapShown && this.decisions) {
+                this.decisions.forEach(decision => {
+                    const midX = (decision.start.x + decision.end.x) / 2;
+                    const midY = (decision.start.y + decision.end.y) / 2;
+                    
+                    if (Math.hypot(e.clientX - midX, e.clientY - midY) < 50) {
+                        this.selectedDecision = decision;
+                    }
+                });
+            }
         }
     }
 
@@ -334,18 +440,26 @@ class Game {
     startGame() {
         sound.init();
         
+        // Block canvas pointer events during menu
+        this.canvas.classList.add('blocked');
+        
         this.player = {
             x: this.canvas.width / 2,
-            y: this.canvas.height / 2 + 50,
+            y: this.canvas.height / 2 + 150,
             size: 35,
             shape: this.playerShape,
             color: this.playerColor,
             rotation: 0
         };
         
-        this.characters = CharacterFactory.createAll();
+        this.characters = [];
         this.timeRemaining = 180;
-        this.state = 'playing';
+        this.state = 'wakeup';
+        this.wakeupProgress = 0;
+        this.playerInBed = true;
+        this.radioPlayed = false;
+        this.bedroomExplored = false;
+        this.streetExplored = false;
         this.fractalViews = 0;
         this.trust = 50;
         this.clarity = 100;
@@ -356,16 +470,39 @@ class Game {
         this.corridorShifted = false;
         
         document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('countdown').classList.remove('hidden');
+        document.getElementById('countdown').classList.add('hidden');
         
-        // Start radio message sequence
-        setTimeout(() => this.playRadioSequence(), 3000);
+        // Unblock canvas when game starts
+        setTimeout(() => {
+            this.canvas.classList.remove('blocked');
+        }, 100);
         
         // Start ambient sound
-        sound.startAmbientTension(0.3);
+        sound.startAmbientTension(0.2);
         
         this.lastTime = performance.now();
         requestAnimationFrame((t) => this.gameLoop(t));
+    }
+
+    playBedroomRadio() {
+        if (this.radioPlayed) return;
+        
+        this.radioPlayed = true;
+        sound.playRadioMessage();
+        
+        this.showMessage('⬠ Из радиоприёмника: хруст помех...');
+        
+        setTimeout(() => {
+            this.showMessage('⬠ "...если вы слышите это, значит время уже почти истекло..."');
+        }, 2000);
+        
+        setTimeout(() => {
+            this.showMessage('⬠ "...выйдите на улицу. Найдите других survivors..."');
+        }, 4500);
+        
+        setTimeout(() => {
+            this.showMessage('');
+        }, 7000);
     }
 
     playRadioSequence() {
@@ -398,7 +535,7 @@ class Game {
     }
 
     gameLoop(currentTime) {
-        if (this.state !== 'playing') return;
+        if (this.state === 'menu' || this.state === 'ending') return;
         
         const deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;
@@ -406,14 +543,29 @@ class Game {
         this.update(deltaTime);
         this.render();
         
-        if (this.timeRemaining > 0) {
+        if (this.state === 'playing') {
+            if (this.timeRemaining > 0) {
+                requestAnimationFrame((t) => this.gameLoop(t));
+            } else {
+                this.triggerEnding();
+            }
+        } else if (this.state === 'wakeup' || this.state === 'bedroom' || this.state === 'street') {
             requestAnimationFrame((t) => this.gameLoop(t));
-        } else {
-            this.triggerEnding();
         }
     }
 
     update(deltaTime) {
+        // Handle different game states
+        if (this.state === 'wakeup' || this.state === 'bedroom' || this.state === 'street') {
+            // Update NPCs on street
+            if (this.state === 'street') {
+                this.characters.forEach(char => {
+                    char.update(deltaTime, this.player.x, this.player.y, 0.3, this.timeRemaining);
+                });
+            }
+            return;
+        }
+        
         // Update countdown with player stress modifier
         let timeModifier = 1;
         if (this.playerStress > 0.7) {
@@ -594,53 +746,77 @@ class Game {
 
     render() {
         this.renderer.clear();
-        this.renderer.drawGradientBackground(this.timeRemaining);
-        this.renderer.drawGeometricCity(this.timeRemaining);
-        this.renderer.drawApartment();
-        this.renderer.drawFractal(this.timeRemaining);
-        this.renderer.drawDistortionEffect();
         
-        // Draw connections
-        this.connections.forEach((intensity, key) => {
-            const [charName] = key.split('-player');
-            const char = this.characters.find(c => c.name === charName);
-            if (char) {
-                this.renderer.drawConnection(char, this.player, intensity);
+        // Draw different scenes based on game state
+        if (this.state === 'wakeup') {
+            this.renderer.drawWakeupScene(this.wakeupProgress);
+            this.renderer.drawPlayerInBed(this.player);
+        } else if (this.state === 'bedroom') {
+            this.renderer.drawBedroom(this.radioPlayed);
+            this.renderer.drawPlayer(this.player);
+        } else if (this.state === 'street') {
+            this.renderer.drawStreet(this.timeRemaining);
+            
+            // Draw street NPCs
+            this.characters.forEach(char => {
+                const pulseIntensity = char.stress;
+                this.renderer.drawCharacter(char, pulseIntensity);
+                // Draw NPC names
+                this.renderer.drawCharacterName(char);
+            });
+            
+            this.renderer.drawPlayer(this.player);
+        } else if (this.state === 'playing') {
+            this.renderer.drawGradientBackground(this.timeRemaining);
+            this.renderer.drawGeometricCity(this.timeRemaining);
+            this.renderer.drawApartment();
+            this.renderer.drawFractal(this.timeRemaining);
+            this.renderer.drawDistortionEffect();
+            
+            // Draw connections
+            this.connections.forEach((intensity, key) => {
+                const [charName] = key.split('-player');
+                const char = this.characters.find(c => c.name === charName);
+                if (char) {
+                    this.renderer.drawConnection(char, this.player, intensity);
+                }
+            });
+            
+            // Draw characters
+            this.characters.forEach(char => {
+                const pulseIntensity = char.stress;
+                this.renderer.drawCharacter(char, pulseIntensity);
+                // Draw character names
+                this.renderer.drawCharacterName(char);
+            });
+            
+            // Draw shadow null
+            if (this.shadowNull) {
+                this.renderer.drawCharacter(this.shadowNull, 1);
             }
-        });
-        
-        // Draw characters
-        this.characters.forEach(char => {
-            const pulseIntensity = char.stress;
-            this.renderer.drawCharacter(char, pulseIntensity);
-        });
-        
-        // Draw shadow null
-        if (this.shadowNull) {
-            this.renderer.drawCharacter(this.shadowNull, 1);
-        }
-        
-        // Draw player
-        this.renderer.drawPlayer(this.player);
-        
-        // Draw decision map
-        if (this.decisionMapShown && this.decisions) {
-            this.renderer.drawDecisionMap(this.decisions, this.timeRemaining);
-        }
-        
-        // Draw collapse effect
-        if (this.timeRemaining < 60) {
-            this.renderer.drawCollapseEffect(this.timeRemaining);
-        }
-        
-        // Draw sleep button (only visible when time <= 5 seconds)
-        if (this.timeRemaining <= 5 && this.timeRemaining > 0) {
-            this.renderer.drawSleepButton(this.sleepHeldTime, this.sleepRequiredTime);
-        }
-        
-        // Draw scratch marks from previous loops
-        if (this.loopCount > 0) {
-            this.renderer.drawScratchMarks(this.scratchMarks, this.player.shape);
+            
+            // Draw player
+            this.renderer.drawPlayer(this.player);
+            
+            // Draw decision map
+            if (this.decisionMapShown && this.decisions) {
+                this.renderer.drawDecisionMap(this.decisions, this.timeRemaining);
+            }
+            
+            // Draw collapse effect
+            if (this.timeRemaining < 60) {
+                this.renderer.drawCollapseEffect(this.timeRemaining);
+            }
+            
+            // Draw sleep button (only visible when time <= 5 seconds)
+            if (this.timeRemaining <= 5 && this.timeRemaining > 0) {
+                this.renderer.drawSleepButton(this.sleepHeldTime, this.sleepRequiredTime);
+            }
+            
+            // Draw scratch marks from previous loops
+            if (this.loopCount > 0) {
+                this.renderer.drawScratchMarks(this.scratchMarks, this.player.shape);
+            }
         }
     }
 

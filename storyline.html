@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПОСЛЕДНИЕ 180 СЕКУНД</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+        <div id="countdown">03:00</div>
+        <div id="trust-indicator" class="trust-indicator hidden">Доверие: <span id="trust-count">0</span>/3</div>
+        <div id="message-overlay"></div>
+
+        <div id="start-screen">
+            <h1>ПОСЛЕДНИЕ 180 СЕКУНД</h1>
+            <p class="subtitle">
+                Пространственно-временной коллапс начнётся через 3 минуты.<br>
+                Вы просыпаетесь в неизвестном месте. Радио передает сигнал SOS.<br>
+                Выйдите на улицу и найдите выживших.
+            </p>
+            <div class="instructions">
+                🖱️ Кликните 3 раза — проснитесь<br>
+                🖱️ Движение мыши — управление<br>
+                🖱️ Клик на радио — прослушать сообщение<br>
+                🏠 Подойдите к двери — выйдите на улицу<br>
+                👥 Подойдите к персонажу — начать спасение<br>
+                ⚡ Резкие движения ускоряют время (+5%)<br>
+                🧘 Спокойствие замедляет время (-3%)
+            </div>
+            <button id="start-btn" class="start-btn">НАЧАТЬ</button>
+        </div>
+
+        <div id="ending-screen" class="hidden">
+            <h1 id="ending-title"></h1>
+            <p id="ending-description"></p>
+            <button id="restart-btn" class="start-btn">НАЧАТЬ ЗАНОВО</button>
+        </div>
+    </div>
+
+    <script src="sound.js"></script>
+    <script src="characters.js"></script>
+    <script src="renderer.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

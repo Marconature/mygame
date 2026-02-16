@@ -144,6 +144,28 @@
             color: #888;
             z-index: 10;
         }
+
+        #message-overlay {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: #fff;
+            text-align: center;
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        #message-overlay.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -151,16 +173,21 @@
         <canvas id="gameCanvas" width="1280" height="720"></canvas>
         <div id="countdown">03:00</div>
         <div id="trust-indicator" class="trust-indicator hidden">Доверие: <span id="trust-count">0</span>/3</div>
+        <div id="message-overlay"></div>
 
         <div id="start-screen">
             <h1>ПОСЛЕДНИЕ 180 СЕКУНД</h1>
             <p class="subtitle">
                 Пространственно-временной коллапс начнётся через 3 минуты.<br>
-                Три фигуры остались в коридоре. Кого вы спасёте?
+                Вы просыпаетесь в неизвестном месте. Радио передает сигнал SOS.<br>
+                Выйдите на улицу и найдите выживших.
             </p>
             <div class="instructions">
-                🖱️ Движение мыши — управление игроком (золотой круг)<br>
-                🖱️ Зажмите ЛКМ рядом с фигурой >5 сек — установите доверие<br>
+                🖱️ Кликните 3 раза — проснитесь<br>
+                🖱️ Движение мыши — управление<br>
+                🖱️ Клик на радио — прослушать сообщение<br>
+                🏠 Подойдите к двери — выйдите на улицу<br>
+                👥 Подойдите к персонажу — начать спасение<br>
                 ⚡ Резкие движения ускоряют время (+5%)<br>
                 🧘 Спокойствие замедляет время (-3%)
             </div>

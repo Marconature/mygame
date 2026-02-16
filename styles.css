@@ -27,6 +27,15 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    z-index: 1;
+}
+
+#gameCanvas.blocked {
+    pointer-events: none;
+}
+
+#start-screen, #ending-screen {
+    z-index: 100;
 }
 
 .countdown {
@@ -91,6 +100,11 @@ body {
     align-items: center;
     z-index: 100;
     padding: 20px;
+    pointer-events: auto;
+}
+
+.start-screen.hidden, .ending-screen.hidden {
+    pointer-events: none;
 }
 
 .start-screen h1, .ending-screen h1 {
